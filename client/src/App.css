@@ -1,0 +1,41 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f6f4;
+  color: #17251e;
+}
+
+.app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.eyebrow {
+  color: #287451;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+}
+
+h1 {
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #66736b;
+}
+
+.panel {
+  margin-top: 32px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #dce5de;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px #17251e0a;
+}
