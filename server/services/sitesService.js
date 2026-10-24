@@ -6,26 +6,29 @@ const editableFields = [
   "customerName",
   "location",
   "serviceType",
-  "status"
+  "status",
 ];
 
 const allowedStatuses = [
   "Active",
   "Commissioning",
-  "Maintenance"
+  "Maintenance",
 ];
 
 const allowedServiceTypes = [
   "Steam",
   "Thermal Energy",
-  "Bulk LPG"
+  "Bulk LPG",
 ];
 
 function parseSiteId(rawId) {
   const id = Number(rawId);
 
   if (!Number.isSafeInteger(id) || id < 1) {
-    throw new AppError(400, "Site ID must be a positive integer");
+    throw new AppError(
+      400,
+      "Site ID must be a positive integer"
+    );
   }
 
   return id;
@@ -37,13 +40,19 @@ function validateSitePayload(payload, requireAllFields = false) {
     typeof payload !== "object" ||
     Array.isArray(payload)
   ) {
-    throw new AppError(400, "Request body must be a JSON object");
+    throw new AppError(
+      400,
+      "Request body must be a JSON object"
+    );
   }
 
   const fields = Object.keys(payload);
 
   if (fields.length === 0) {
-    throw new AppError(400, "Request body cannot be empty");
+    throw new AppError(
+      400,
+      "Request body cannot be empty"
+    );
   }
 
   const unknownFields = fields.filter(
@@ -75,7 +84,10 @@ function validateSitePayload(payload, requireAllFields = false) {
   for (const field of fields) {
     const value = payload[field];
 
-    if (typeof value !== "string" || value.trim().length === 0) {
+    if (
+      typeof value !== "string" ||
+      value.trim().length === 0
+    ) {
       throw new AppError(
         400,
         `${field} must be a non-empty string`
@@ -103,12 +115,12 @@ function validateSitePayload(payload, requireAllFields = false) {
 }
 
 export async function getAllSites() {
-  return sitesRepository.findAll();
+  return await sitesRepository.findAll();
 }
 
 export async function getSiteById(rawId) {
   const id = parseSiteId(rawId);
-  const site = sitesRepository.findById(id);
+  const site = await sitesRepository.findById(id);
 
   if (!site) {
     throw new AppError(404, "Site not found");
@@ -120,14 +132,17 @@ export async function getSiteById(rawId) {
 export async function createSite(payload) {
   const siteData = validateSitePayload(payload, true);
 
-  return sitesRepository.create(siteData);
+  return await sitesRepository.create(siteData);
 }
 
 export async function replaceSite(rawId, payload) {
   const id = parseSiteId(rawId);
   const siteData = validateSitePayload(payload, true);
 
-  const site = sitesRepository.replaceById(id, siteData);
+  const site = await sitesRepository.replaceById(
+    id,
+    siteData
+  );
 
   if (!site) {
     throw new AppError(404, "Site not found");
@@ -140,7 +155,10 @@ export async function patchSite(rawId, payload) {
   const id = parseSiteId(rawId);
   const updates = validateSitePayload(payload);
 
-  const site = sitesRepository.patchById(id, updates);
+  const site = await sitesRepository.patchById(
+    id,
+    updates
+  );
 
   if (!site) {
     throw new AppError(404, "Site not found");
@@ -151,7 +169,7 @@ export async function patchSite(rawId, payload) {
 
 export async function deleteSite(rawId) {
   const id = parseSiteId(rawId);
-  const site = sitesRepository.deleteById(id);
+  const site = await sitesRepository.deleteById(id);
 
   if (!site) {
     throw new AppError(404, "Site not found");

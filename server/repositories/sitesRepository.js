@@ -1,71 +1,156 @@
-import { sites } from "../data/sites.js";
+import { pool } from "../db/pool.js";
 
-const copySite = (site) => ({ ...site });
-
-export function findAll() {
-  return sites.map(copySite);
-}
-
-export function findById(id) {
-  const site = sites.find((item) => item.id === id);
-
-  return site ? copySite(site) : null;
-}
-
-export function create(siteData) {
-  const nextId =
-    sites.reduce((maximum, site) => Math.max(maximum, site.id), 0) + 1;
-
-  const newSite = {
-    id: nextId,
-    ...siteData
-  };
-
-  sites.push(newSite);
-
-  return copySite(newSite);
-}
-
-export function replaceById(id, siteData) {
-  const index = sites.findIndex((item) => item.id === id);
-
-  if (index === -1) {
+// Convert SQL column names into our existing API field names.
+function mapSite(row) {
+  if (!row) {
     return null;
   }
 
-  const updatedSite = {
-    id,
-    ...siteData
+  return {
+    id: Number(row.id),
+    name: row.name,
+    customerName: row.customer_name,
+    location: row.location,
+    serviceType: row.service_type,
+    status: row.status,
   };
-
-  sites[index] = updatedSite;
-
-  return copySite(updatedSite);
 }
 
-export function patchById(id, updates) {
-  const index = sites.findIndex((item) => item.id === id);
+// Retrieve every site.
+export async function findAll() {
+  const [rows] = await pool.execute(`
+    SELECT
+      id,
+      name,
+      customer_name,
+      location,
+      service_type,
+      status
+    FROM sites
+    ORDER BY id
+  `);
 
-  if (index === -1) {
+  return rows.map(mapSite);
+}
+
+// Retrieve one site.
+export async function findById(id) {
+  const [rows] = await pool.execute(
+    `SELECT
+       id,
+       name,
+       customer_name,
+       location,
+       service_type,
+       status
+     FROM sites
+     WHERE id = ?`,
+    [id]
+  );
+
+  return rows.length > 0 ? mapSite(rows[0]) : null;
+}
+
+// Insert a new site.
+export async function create(siteData) {
+  const [result] = await pool.execute(
+    `INSERT INTO sites
+       (name, customer_name, location, service_type, status)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      siteData.name,
+      siteData.customerName,
+      siteData.location,
+      siteData.serviceType,
+      siteData.status,
+    ]
+  );
+
+  return findById(result.insertId);
+}
+
+// Replace all editable fields.
+export async function replaceById(id, siteData) {
+  const existing = await findById(id);
+
+  if (!existing) {
     return null;
   }
 
-  sites[index] = {
-    ...sites[index],
-    ...updates
-  };
+  await pool.execute(
+    `UPDATE sites
+     SET name = ?,
+         customer_name = ?,
+         location = ?,
+         service_type = ?,
+         status = ?
+     WHERE id = ?`,
+    [
+      siteData.name,
+      siteData.customerName,
+      siteData.location,
+      siteData.serviceType,
+      siteData.status,
+      id,
+    ]
+  );
 
-  return copySite(sites[index]);
+  return findById(id);
 }
 
-export function deleteById(id) {
-  const index = sites.findIndex((item) => item.id === id);
+// Update only the supplied fields.
+export async function patchById(id, updates) {
+  const existing = await findById(id);
 
-  if (index === -1) {
+  if (!existing) {
     return null;
   }
 
-  const [deletedSite] = sites.splice(index, 1);
+  const columnNames = {
+    name: "name",
+    customerName: "customer_name",
+    location: "location",
+    serviceType: "service_type",
+    status: "status",
+  };
 
-  return copySite(deletedSite);
+  const fields = Object.keys(updates);
+
+  if (fields.length === 0) {
+    return existing;
+  }
+
+  // Only known columns are allowed in the generated SQL.
+  if (fields.some((field) => !Object.hasOwn(columnNames, field))) {
+    throw new Error("Unsupported update field");
+  }
+
+  const assignments = fields
+    .map((field) => `${columnNames[field]} = ?`)
+    .join(", ");
+
+  const values = fields.map((field) => updates[field]);
+
+  await pool.execute(
+    `UPDATE sites SET ${assignments} WHERE id = ?`,
+    [...values, id]
+  );
+
+  return findById(id);
+}
+
+// Delete a site and return its previous details.
+export async function deleteById(id) {
+  const existing = await findById(id);
+
+  if (!existing) {
+    return null;
+  }
+
+  await pool.execute(
+    "DELETE FROM sites WHERE id = ?",
+    [id]
+  );
+
+  return existing;
 }

@@ -1,9 +1,9 @@
+server/.env
+client/.env.local
 node_modules/
 client/dist/
 server/dist/
-
 .env
 .env.*
 !.env.example
-
 *.log
