@@ -1,7 +1,7 @@
 
 import { useState } from "react";
+
 import {
-  Activity,
   Bell,
   Building2,
   ChevronDown,
@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import OverviewPage from "./pages/OverviewPage";
 import SitesPage from "./pages/SitesPage";
 import CustomersPage from "./pages/CustomersPage";
 import MeterManagementPage from "./pages/MeterManagementPage";
@@ -25,7 +26,7 @@ import "./CustomerManagement.css";
 import "./MeterManagement.css";
 
 const NAVIGATION = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, comingSoon: true },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "sites", label: "Sites", icon: Building2 },
   { id: "customers", label: "Customers", icon: Users },
   { id: "meters", label: "Meter readings", icon: Gauge },
@@ -34,10 +35,10 @@ const NAVIGATION = [
 ];
 
 export default function App() {
-  const [activePage, setActivePage] = useState("sites");
+  const [activePage, setActivePage] = useState("overview");
 
-  const currentLabel =
-    NAVIGATION.find((item) => item.id === activePage)?.label ?? "Sites";
+  const currentPage =
+    NAVIGATION.find((item) => item.id === activePage) ?? NAVIGATION[0];
 
   return (
     <div className="app-layout">
@@ -46,6 +47,7 @@ export default function App() {
           <div className="brand-mark">
             <Zap size={23} fill="currentColor" />
           </div>
+
           <div>
             <div className="brand-name">Enerwise</div>
             <div className="brand-caption">ENERGY OPERATIONS</div>
@@ -105,7 +107,7 @@ export default function App() {
           <div className="breadcrumbs">
             <span>Operations</span>
             <span className="breadcrumb-divider">/</span>
-            <strong>{currentLabel}</strong>
+            <strong>{currentPage.label}</strong>
           </div>
 
           <div className="topbar-right">
@@ -113,6 +115,7 @@ export default function App() {
               <span className="online-dot" />
               Local environment
             </div>
+
             <button
               type="button"
               className="icon-button"
@@ -122,11 +125,13 @@ export default function App() {
               <Bell size={19} />
               <span className="notification-dot" />
             </button>
+
             <div className="topbar-avatar">OT</div>
             <ChevronDown size={16} className="topbar-chevron" />
           </div>
         </header>
 
+        {activePage === "overview" && <OverviewPage />}
         {activePage === "sites" && <SitesPage />}
         {activePage === "customers" && <CustomersPage />}
         {activePage === "meters" && <MeterManagementPage />}
