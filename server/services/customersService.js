@@ -175,16 +175,30 @@ export async function getCustomerById(rawId) {
 }
 
 export async function createCustomer(payload) {
-  const customer = validatePayload({
-    status: "Active",
-    ...payload,
-  });
+  const supplied = validatePayload(payload);
 
-  if (!customer.companyName) {
-    throw new AppError(400, "Company name is required");
+  if (!supplied.companyName) {
+    throw new AppError(
+      400,
+      "Company name is required"
+    );
   }
 
-  return handleDuplicate(() => repo.create(customer));
+  const customerData = validatePayload(
+    {
+      companyName: supplied.companyName,
+      contactName: supplied.contactName ?? null,
+      email: supplied.email ?? null,
+      phone: supplied.phone ?? null,
+      billingAddress: supplied.billingAddress ?? null,
+      status: supplied.status ?? "Active",
+    },
+    true
+  );
+
+  return handleDuplicate(
+    () => repo.create(customerData)
+  );
 }
 
 export async function replaceCustomer(rawId, payload) {
