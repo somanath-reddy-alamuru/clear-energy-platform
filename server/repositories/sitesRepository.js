@@ -1,15 +1,15 @@
 
 import { pool } from "../db/pool.js";
 
-// Convert MySQL column names into our existing API field names.
+// Preserve the current API field names while using MySQL
+// columns and a real customer relationship.
 function mapSite(row) {
-  if (!row) {
-    return null;
-  }
+  if (!row) return null;
 
   return {
     id: Number(row.id),
     name: row.name,
+    customerId: Number(row.customer_id),
     customerName: row.customer_name,
     location: row.location,
     serviceType: row.service_type,
@@ -17,50 +17,44 @@ function mapSite(row) {
   };
 }
 
-// GET: Retrieve all sites.
+const selectSites = `
+  SELECT
+    s.id,
+    s.name,
+    s.customer_id,
+    c.company_name AS customer_name,
+    s.location,
+    s.service_type,
+    s.status
+  FROM sites s
+  JOIN customers c ON c.id = s.customer_id
+`;
+
 export async function findAll() {
-  const [rows] = await pool.execute(`
-    SELECT
-      id,
-      name,
-      customer_name,
-      location,
-      service_type,
-      status
-    FROM sites
-    ORDER BY id
-  `);
+  const [rows] = await pool.execute(
+    `${selectSites} ORDER BY s.id`
+  );
 
   return rows.map(mapSite);
 }
 
-// GET: Retrieve one site.
 export async function findById(id) {
   const [rows] = await pool.execute(
-    `SELECT
-       id,
-       name,
-       customer_name,
-       location,
-       service_type,
-       status
-     FROM sites
-     WHERE id = ?`,
+    `${selectSites} WHERE s.id = ?`,
     [id]
   );
 
   return rows.length ? mapSite(rows[0]) : null;
 }
 
-// POST: Create a site.
 export async function create(siteData) {
   const [result] = await pool.execute(
     `INSERT INTO sites
-       (name, customer_name, location, service_type, status)
+      (name, customer_id, location, service_type, status)
      VALUES (?, ?, ?, ?, ?)`,
     [
       siteData.name,
-      siteData.customerName,
+      siteData.customerId,
       siteData.location,
       siteData.serviceType,
       siteData.status,
@@ -70,25 +64,21 @@ export async function create(siteData) {
   return findById(result.insertId);
 }
 
-// PUT: Replace all editable fields.
 export async function replaceById(id, siteData) {
   const existing = await findById(id);
-
-  if (!existing) {
-    return null;
-  }
+  if (!existing) return null;
 
   await pool.execute(
     `UPDATE sites
      SET name = ?,
-         customer_name = ?,
+         customer_id = ?,
          location = ?,
          service_type = ?,
          status = ?
      WHERE id = ?`,
     [
       siteData.name,
-      siteData.customerName,
+      siteData.customerId,
       siteData.location,
       siteData.serviceType,
       siteData.status,
@@ -99,17 +89,13 @@ export async function replaceById(id, siteData) {
   return findById(id);
 }
 
-// PATCH: Update selected fields only.
 export async function patchById(id, updates) {
   const existing = await findById(id);
+  if (!existing) return null;
 
-  if (!existing) {
-    return null;
-  }
-
-  const columns = {
+  const columnMap = {
     name: "name",
-    customerName: "customer_name",
+    customerId: "customer_id",
     location: "location",
     serviceType: "service_type",
     status: "status",
@@ -117,18 +103,14 @@ export async function patchById(id, updates) {
 
   const fields = Object.keys(updates);
 
-  if (fields.length === 0) {
-    return existing;
-  }
+  if (fields.length === 0) return existing;
 
-  if (
-    fields.some((field) => !Object.hasOwn(columns, field))
-  ) {
-    throw new Error("Unsupported update field");
+  if (fields.some((field) => !Object.hasOwn(columnMap, field))) {
+    throw new Error("Unsupported site update field");
   }
 
   const assignments = fields
-    .map((field) => `${columns[field]} = ?`)
+    .map((field) => `${columnMap[field]} = ?`)
     .join(", ");
 
   const values = fields.map((field) => updates[field]);
@@ -141,13 +123,9 @@ export async function patchById(id, updates) {
   return findById(id);
 }
 
-// DELETE: Remove a site.
 export async function deleteById(id) {
   const existing = await findById(id);
-
-  if (!existing) {
-    return null;
-  }
+  if (!existing) return null;
 
   await pool.execute(
     "DELETE FROM sites WHERE id = ?",

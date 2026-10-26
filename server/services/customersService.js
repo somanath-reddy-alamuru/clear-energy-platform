@@ -233,7 +233,24 @@ export async function patchCustomer(rawId, payload) {
 
 export async function deleteCustomer(rawId) {
   const id = parseId(rawId);
-  const customer = await repo.deleteById(id);
+
+  let customer;
+
+  try {
+    customer = await repo.deleteById(id);
+  } catch (error) {
+    if (
+      error.code === "ER_ROW_IS_REFERENCED_2" ||
+      error.code === "ER_ROW_IS_REFERENCED"
+    ) {
+      throw new AppError(
+        409,
+        "Cannot delete a customer while sites are linked to it."
+      );
+    }
+
+    throw error;
+  }
 
   if (!customer) {
     throw new AppError(404, "Customer not found");

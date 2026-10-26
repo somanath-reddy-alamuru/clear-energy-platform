@@ -37,6 +37,18 @@ export async function findById(id) {
   return rows.length ? mapCustomer(rows[0]) : null;
 }
 
+export async function findByCompanyName(companyName) {
+  const [rows] = await pool.execute(
+    `SELECT ${columns}
+     FROM customers
+     WHERE company_name = ?
+     LIMIT 1`,
+    [companyName]
+  );
+
+  return rows.length ? mapCustomer(rows[0]) : null;
+}
+
 export async function create(customer) {
   const [result] = await pool.execute(
     `INSERT INTO customers

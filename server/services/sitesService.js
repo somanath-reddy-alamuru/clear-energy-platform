@@ -1,10 +1,19 @@
 
 import { AppError } from "../utils/AppError.js";
 import * as sitesRepository from "../repositories/sitesRepository.js";
+import * as customersRepository from "../repositories/customersRepository.js";
 
 const editableFields = [
   "name",
   "customerName",
+  "customerId",
+  "location",
+  "serviceType",
+  "status",
+];
+
+const requiredFields = [
+  "name",
   "location",
   "serviceType",
   "status",
@@ -50,10 +59,7 @@ function validateSitePayload(payload, requireAllFields = false) {
   const fields = Object.keys(payload);
 
   if (fields.length === 0) {
-    throw new AppError(
-      400,
-      "Request body cannot be empty"
-    );
+    throw new AppError(400, "Request body cannot be empty");
   }
 
   const unknownFields = fields.filter(
@@ -67,15 +73,35 @@ function validateSitePayload(payload, requireAllFields = false) {
     );
   }
 
+  if (
+    payload.customerName !== undefined &&
+    payload.customerId !== undefined
+  ) {
+    throw new AppError(
+      400,
+      "Send either customerName or customerId, not both"
+    );
+  }
+
   if (requireAllFields) {
-    const missingFields = editableFields.filter(
+    const missing = requiredFields.filter(
       (field) => !Object.hasOwn(payload, field)
     );
 
-    if (missingFields.length > 0) {
+    if (missing.length > 0) {
       throw new AppError(
         400,
-        `Missing fields: ${missingFields.join(", ")}`
+        `Missing fields: ${missing.join(", ")}`
+      );
+    }
+
+    if (
+      payload.customerName === undefined &&
+      payload.customerId === undefined
+    ) {
+      throw new AppError(
+        400,
+        "A customerName or customerId is required"
       );
     }
   }
@@ -84,6 +110,23 @@ function validateSitePayload(payload, requireAllFields = false) {
 
   for (const field of fields) {
     const value = payload[field];
+
+    if (field === "customerId") {
+      const customerId = Number(value);
+
+      if (
+        !Number.isSafeInteger(customerId) ||
+        customerId < 1
+      ) {
+        throw new AppError(
+          400,
+          "customerId must be a positive integer"
+        );
+      }
+
+      normalized.customerId = customerId;
+      continue;
+    }
 
     if (
       typeof value !== "string" ||
@@ -96,6 +139,21 @@ function validateSitePayload(payload, requireAllFields = false) {
     }
 
     normalized[field] = value.trim();
+  }
+
+  const maxLengths = {
+    name: 120,
+    customerName: 120,
+    location: 200,
+  };
+
+  for (const [field, maxLength] of Object.entries(maxLengths)) {
+    if (
+      normalized[field] !== undefined &&
+      normalized[field].length > maxLength
+    ) {
+      throw new AppError(400, `${field} is too long`);
+    }
   }
 
   if (
@@ -115,6 +173,40 @@ function validateSitePayload(payload, requireAllFields = false) {
   return normalized;
 }
 
+// Resolve a customer reference and check that the customer
+// exists and is active before assigning a site to it.
+async function resolveCustomerId(siteData) {
+  let customer;
+
+  if (siteData.customerId !== undefined) {
+    customer = await customersRepository.findById(
+      siteData.customerId
+    );
+  } else if (siteData.customerName !== undefined) {
+    customer = await customersRepository.findByCompanyName(
+      siteData.customerName
+    );
+  } else {
+    throw new AppError(400, "A customer is required");
+  }
+
+  if (!customer) {
+    throw new AppError(
+      400,
+      "Customer not found. Create the customer first."
+    );
+  }
+
+  if (customer.status !== "Active") {
+    throw new AppError(
+      409,
+      "A site cannot be assigned to an inactive customer"
+    );
+  }
+
+  return customer.id;
+}
+
 export async function getAllSites() {
   return sitesRepository.findAll();
 }
@@ -131,19 +223,28 @@ export async function getSiteById(rawId) {
 }
 
 export async function createSite(payload) {
-  const siteData = validateSitePayload(payload, true);
+  const validated = validateSitePayload(payload, true);
+  const customerId = await resolveCustomerId(validated);
 
-  return sitesRepository.create(siteData);
+  const { customerName, ...siteData } = validated;
+
+  return sitesRepository.create({
+    ...siteData,
+    customerId,
+  });
 }
 
 export async function replaceSite(rawId, payload) {
   const id = parseSiteId(rawId);
-  const siteData = validateSitePayload(payload, true);
+  const validated = validateSitePayload(payload, true);
+  const customerId = await resolveCustomerId(validated);
 
-  const site = await sitesRepository.replaceById(
-    id,
-    siteData
-  );
+  const { customerName, ...siteData } = validated;
+
+  const site = await sitesRepository.replaceById(id, {
+    ...siteData,
+    customerId,
+  });
 
   if (!site) {
     throw new AppError(404, "Site not found");
@@ -156,10 +257,17 @@ export async function patchSite(rawId, payload) {
   const id = parseSiteId(rawId);
   const updates = validateSitePayload(payload);
 
-  const site = await sitesRepository.patchById(
-    id,
-    updates
-  );
+  if (
+    updates.customerName !== undefined ||
+    updates.customerId !== undefined
+  ) {
+    const customerId = await resolveCustomerId(updates);
+
+    delete updates.customerName;
+    updates.customerId = customerId;
+  }
+
+  const site = await sitesRepository.patchById(id, updates);
 
   if (!site) {
     throw new AppError(404, "Site not found");
