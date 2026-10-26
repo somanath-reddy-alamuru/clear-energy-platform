@@ -7,9 +7,7 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      ...(options.body
-        ? { "Content-Type": "application/json" }
-        : {}),
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     },
   });
@@ -25,14 +23,17 @@ async function apiRequest(path, options = {}) {
   return result;
 }
 
-// Sites
-export async function getSites() {
-  const result = await apiRequest("/api/sites");
-  if (!Array.isArray(result.data)) {
-    throw new Error("Invalid sites API response");
-  }
-  return result.data;
+function getList(path, label) {
+  return apiRequest(path).then((result) => {
+    if (!Array.isArray(result.data)) {
+      throw new Error(`Invalid ${label} API response`);
+    }
+    return result.data;
+  });
 }
+
+// Sites
+export const getSites = () => getList("/api/sites", "sites");
 
 export async function createSite(data) {
   return (await apiRequest("/api/sites", {
@@ -60,13 +61,7 @@ export async function deleteSite(id) {
 }
 
 // Customers
-export async function getCustomers() {
-  const result = await apiRequest("/api/customers");
-  if (!Array.isArray(result.data)) {
-    throw new Error("Invalid customers API response");
-  }
-  return result.data;
-}
+export const getCustomers = () => getList("/api/customers", "customers");
 
 export async function createCustomer(data) {
   return (await apiRequest("/api/customers", {
@@ -94,13 +89,7 @@ export async function deleteCustomer(id) {
 }
 
 // Meters
-export async function getMeters() {
-  const result = await apiRequest("/api/meters");
-  if (!Array.isArray(result.data)) {
-    throw new Error("Invalid meters API response");
-  }
-  return result.data;
-}
+export const getMeters = () => getList("/api/meters", "meters");
 
 export async function createMeter(data) {
   return (await apiRequest("/api/meters", {
@@ -127,7 +116,7 @@ export async function deleteMeter(id) {
   return apiRequest(`/api/meters/${id}`, { method: "DELETE" });
 }
 
-// Meter readings and consumption
+// Readings
 export async function getMeterReadings(meterId) {
   return apiRequest(`/api/meters/${meterId}/readings`);
 }
@@ -142,9 +131,52 @@ export async function createMeterReading(meterId, data) {
 export async function getMeterConsumption(meterId, from, to) {
   const params = new URLSearchParams({ from, to });
 
-  const result = await apiRequest(
+  return (await apiRequest(
     `/api/meters/${meterId}/consumption?${params.toString()}`
-  );
+  )).data;
+}
 
-  return result.data;
+// Contracts
+export const getContracts = () => getList("/api/contracts", "contracts");
+
+export async function createContract(data) {
+  return (await apiRequest("/api/contracts", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })).data;
+}
+
+export async function replaceContract(id, data) {
+  return (await apiRequest(`/api/contracts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })).data;
+}
+
+export async function patchContract(id, data) {
+  return (await apiRequest(`/api/contracts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })).data;
+}
+
+export async function deleteContract(id) {
+  return apiRequest(`/api/contracts/${id}`, { method: "DELETE" });
+}
+
+// Invoices
+export const getInvoices = () => getList("/api/invoices", "invoices");
+
+export async function createInvoice(data) {
+  return (await apiRequest("/api/invoices", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })).data;
+}
+
+export async function patchInvoice(id, data) {
+  return (await apiRequest(`/api/invoices/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })).data;
 }

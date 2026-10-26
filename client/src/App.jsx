@@ -19,19 +19,22 @@ import OverviewPage from "./pages/OverviewPage";
 import SitesPage from "./pages/SitesPage";
 import CustomersPage from "./pages/CustomersPage";
 import MeterManagementPage from "./pages/MeterManagementPage";
+import ContractsPage from "./pages/ContractsPage";
+import BillingPage from "./pages/BillingPage";
 
 import "./App.css";
 import "./SiteManagement.css";
 import "./CustomerManagement.css";
 import "./MeterManagement.css";
+import "./FinancialPages.css";
 
 const NAVIGATION = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "sites", label: "Sites", icon: Building2 },
   { id: "customers", label: "Customers", icon: Users },
   { id: "meters", label: "Meter readings", icon: Gauge },
-  { id: "contracts", label: "Contracts", icon: FileText, comingSoon: true },
-  { id: "billing", label: "Billing & invoices", icon: Receipt, comingSoon: true },
+  { id: "contracts", label: "Contracts", icon: FileText },
+  { id: "billing", label: "Billing & invoices", icon: Receipt },
 ];
 
 export default function App() {
@@ -47,7 +50,6 @@ export default function App() {
           <div className="brand-mark">
             <Zap size={23} fill="currentColor" />
           </div>
-
           <div>
             <div className="brand-name">Enerwise</div>
             <div className="brand-caption">ENERGY OPERATIONS</div>
@@ -57,7 +59,7 @@ export default function App() {
         <div className="workspace-label">WORKSPACE</div>
 
         <nav className="navigation" aria-label="Main navigation">
-          {NAVIGATION.map(({ id, label, icon: Icon, comingSoon }) => {
+          {NAVIGATION.map(({ id, label, icon: Icon }) => {
             const active = activePage === id;
 
             return (
@@ -65,16 +67,11 @@ export default function App() {
                 key={id}
                 type="button"
                 className={`nav-item ${active ? "nav-item--active" : ""}`}
-                disabled={Boolean(comingSoon)}
-                onClick={() => {
-                  if (!comingSoon) setActivePage(id);
-                }}
-                title={comingSoon ? `${label} — coming soon` : label}
+                onClick={() => setActivePage(id)}
                 aria-current={active ? "page" : undefined}
               >
                 <Icon size={19} />
                 <span>{label}</span>
-                {comingSoon && <span className="nav-soon">Soon</span>}
               </button>
             );
           })}
@@ -82,9 +79,7 @@ export default function App() {
 
         <div className="sidebar-bottom">
           <div className="help-card">
-            <div className="help-icon">
-              <CircleHelp size={19} />
-            </div>
+            <div className="help-icon"><CircleHelp size={19} /></div>
             <div>
               <strong>Need a hand?</strong>
               <p>Your workspace guide</p>
@@ -115,7 +110,6 @@ export default function App() {
               <span className="online-dot" />
               Local environment
             </div>
-
             <button
               type="button"
               className="icon-button"
@@ -125,7 +119,6 @@ export default function App() {
               <Bell size={19} />
               <span className="notification-dot" />
             </button>
-
             <div className="topbar-avatar">OT</div>
             <ChevronDown size={16} className="topbar-chevron" />
           </div>
@@ -135,6 +128,8 @@ export default function App() {
         {activePage === "sites" && <SitesPage />}
         {activePage === "customers" && <CustomersPage />}
         {activePage === "meters" && <MeterManagementPage />}
+        {activePage === "contracts" && <ContractsPage />}
+        {activePage === "billing" && <BillingPage />}
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ import cors from "cors";
 import sitesRouter from "./routes/sites.js";
 import customersRouter from "./routes/customers.js";
 import metersRouter from "./routes/meters.js";
+import contractsRouter from "./routes/contracts.js";
+import invoicesRouter from "./routes/invoices.js";
 
 import { AppError } from "./utils/AppError.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -16,16 +18,24 @@ const PORT = Number(process.env.PORT || 5000);
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
-  return res.status(200).json({
-    status: "ok",
-    message: "Backend connected successfully",
-  });
+app.get("/api/health", async (req, res, next) => {
+  try {
+    await pool.query("SELECT 1");
+
+    res.status(200).json({
+      status: "ok",
+      database: "connected",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use("/api/sites", sitesRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/meters", metersRouter);
+app.use("/api/contracts", contractsRouter);
+app.use("/api/invoices", invoicesRouter);
 
 app.use((req, res, next) => {
   next(
@@ -49,10 +59,6 @@ async function startServer() {
   } catch (err) {
     console.error("Unable to connect to MySQL.");
     console.error(err.message);
-    console.error(
-      "Check your MySQL service, credentials, database, and server/.env."
-    );
-
     process.exit(1);
   }
 }
