@@ -1,6 +1,7 @@
+
 import { pool } from "../db/pool.js";
 
-// Convert SQL column names into our existing API field names.
+// Convert MySQL column names into our existing API field names.
 function mapSite(row) {
   if (!row) {
     return null;
@@ -16,7 +17,7 @@ function mapSite(row) {
   };
 }
 
-// Retrieve every site.
+// GET: Retrieve all sites.
 export async function findAll() {
   const [rows] = await pool.execute(`
     SELECT
@@ -33,7 +34,7 @@ export async function findAll() {
   return rows.map(mapSite);
 }
 
-// Retrieve one site.
+// GET: Retrieve one site.
 export async function findById(id) {
   const [rows] = await pool.execute(
     `SELECT
@@ -48,10 +49,10 @@ export async function findById(id) {
     [id]
   );
 
-  return rows.length > 0 ? mapSite(rows[0]) : null;
+  return rows.length ? mapSite(rows[0]) : null;
 }
 
-// Insert a new site.
+// POST: Create a site.
 export async function create(siteData) {
   const [result] = await pool.execute(
     `INSERT INTO sites
@@ -69,7 +70,7 @@ export async function create(siteData) {
   return findById(result.insertId);
 }
 
-// Replace all editable fields.
+// PUT: Replace all editable fields.
 export async function replaceById(id, siteData) {
   const existing = await findById(id);
 
@@ -98,7 +99,7 @@ export async function replaceById(id, siteData) {
   return findById(id);
 }
 
-// Update only the supplied fields.
+// PATCH: Update selected fields only.
 export async function patchById(id, updates) {
   const existing = await findById(id);
 
@@ -106,7 +107,7 @@ export async function patchById(id, updates) {
     return null;
   }
 
-  const columnNames = {
+  const columns = {
     name: "name",
     customerName: "customer_name",
     location: "location",
@@ -120,13 +121,14 @@ export async function patchById(id, updates) {
     return existing;
   }
 
-  // Only known columns are allowed in the generated SQL.
-  if (fields.some((field) => !Object.hasOwn(columnNames, field))) {
+  if (
+    fields.some((field) => !Object.hasOwn(columns, field))
+  ) {
     throw new Error("Unsupported update field");
   }
 
   const assignments = fields
-    .map((field) => `${columnNames[field]} = ?`)
+    .map((field) => `${columns[field]} = ?`)
     .join(", ");
 
   const values = fields.map((field) => updates[field]);
@@ -139,7 +141,7 @@ export async function patchById(id, updates) {
   return findById(id);
 }
 
-// Delete a site and return its previous details.
+// DELETE: Remove a site.
 export async function deleteById(id) {
   const existing = await findById(id);
 

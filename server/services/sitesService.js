@@ -1,3 +1,4 @@
+
 import { AppError } from "../utils/AppError.js";
 import * as sitesRepository from "../repositories/sitesRepository.js";
 
@@ -115,7 +116,7 @@ function validateSitePayload(payload, requireAllFields = false) {
 }
 
 export async function getAllSites() {
-  return await sitesRepository.findAll();
+  return sitesRepository.findAll();
 }
 
 export async function getSiteById(rawId) {
@@ -132,7 +133,7 @@ export async function getSiteById(rawId) {
 export async function createSite(payload) {
   const siteData = validateSitePayload(payload, true);
 
-  return await sitesRepository.create(siteData);
+  return sitesRepository.create(siteData);
 }
 
 export async function replaceSite(rawId, payload) {
