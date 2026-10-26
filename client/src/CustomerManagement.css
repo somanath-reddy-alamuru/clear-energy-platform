@@ -1,0 +1,66 @@
+
+.customer-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 240px;
+  color: #65766a;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.customer-detail svg {
+  flex-shrink: 0;
+  color: #92a197;
+}
+
+.customer-status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status--inactive {
+  color: #69756c;
+  background: #f0f2f0;
+  border: 1px solid #e2e6e2;
+}
+
+.customer-status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.customers-table th,
+.customers-table td {
+  vertical-align: middle;
+}
+
+.form-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #dce5dd;
+  border-radius: 8px;
+  color: #33473a;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.form-field textarea:focus {
+  outline: none;
+  border-color: #82b292;
+  box-shadow: 0 0 0 3px #e7f3e9;
+}
+
+@media (max-width: 760px) {
+  .customer-detail {
+    min-width: 140px;
+  }
+}

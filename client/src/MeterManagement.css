@@ -1,0 +1,209 @@
+
+.meter-row--selected td {
+  background: #f2f8f3 !important;
+}
+
+.meter-select-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #304b39;
+  text-align: left;
+  min-width: 175px;
+}
+
+.meter-select-button strong,
+.meter-select-button small {
+  display: block;
+}
+
+.meter-select-button strong {
+  font-size: 11px;
+}
+
+.meter-select-button small {
+  margin-top: 5px;
+  color: #8c998f;
+  font-size: 10px;
+}
+
+.meter-pencil {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.meter-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  align-items: start;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.meter-detail-panel {
+  min-width: 0;
+}
+
+.meter-inline-error,
+.meter-inline-success {
+  margin: 12px 20px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.meter-inline-error {
+  border: 1px solid #f0d4d1;
+  color: #923f39;
+  background: #fff5f4;
+}
+
+.meter-inline-success {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #d7eadc;
+  color: #286b43;
+  background: #f0f8f1;
+}
+
+.reading-form,
+.consumption-form {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-bottom: 1px solid #edf1ed;
+}
+
+.reading-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.consumption-form {
+  border-bottom: 0;
+}
+
+.consumption-form > .button {
+  width: 100%;
+}
+
+.consumption-result {
+  margin: 0 20px 20px;
+  padding: 20px;
+  border: 1px solid #d7eadc;
+  border-radius: 12px;
+  background: #f5faf6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.consumption-result-label {
+  color: #708377;
+  font-size: 12px;
+}
+
+.consumption-result > strong {
+  margin-top: 10px;
+  color: #215d3e;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.consumption-unit {
+  color: #64816f;
+  font-size: 12px;
+}
+
+.consumption-breakdown {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #dcebe0;
+}
+
+.consumption-breakdown div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.consumption-breakdown div:last-child {
+  text-align: right;
+}
+
+.consumption-breakdown span {
+  color: #7f9185;
+  font-size: 10px;
+}
+
+.consumption-breakdown strong {
+  color: #355944;
+  font-size: 13px;
+}
+
+.meter-empty-state {
+  padding: 34px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #87958b;
+  gap: 10px;
+}
+
+.meter-empty-state svg {
+  color: #8ca795;
+}
+
+.meter-empty-state strong {
+  color: #3d5947;
+  font-size: 13px;
+}
+
+.meter-empty-state p {
+  margin: 0;
+  max-width: 300px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.meter-empty-state--compact {
+  padding: 10px 20px 24px;
+}
+
+@media (max-width: 1050px) {
+  .meter-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .meter-detail-grid {
+    gap: 14px;
+  }
+
+  .consumption-result {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .reading-form {
+    padding: 15px;
+  }
+
+  .consumption-form {
+    padding: 15px;
+  }
+}
