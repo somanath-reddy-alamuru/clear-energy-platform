@@ -1,4 +1,3 @@
-
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 ).replace(/\/+$/, "");
@@ -7,7 +6,9 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
       ...options.headers,
     },
   });
@@ -27,7 +28,17 @@ export async function getSites() {
   const result = await apiRequest("/api/sites");
 
   if (!Array.isArray(result.data)) {
-    throw new Error("The sites API returned an unexpected response");
+    throw new Error("Invalid sites API response");
+  }
+
+  return result.data;
+}
+
+export async function getCustomers() {
+  const result = await apiRequest("/api/customers");
+
+  if (!Array.isArray(result.data)) {
+    throw new Error("Invalid customers API response");
   }
 
   return result.data;

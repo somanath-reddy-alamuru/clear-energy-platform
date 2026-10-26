@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -30,6 +29,7 @@ import {
 import {
   createSite,
   deleteSite,
+  getCustomers,
   getSites,
   patchSite,
   replaceSite,
@@ -80,6 +80,9 @@ function SiteStatus({ status }) {
 function SiteFormModal({
   mode,
   site,
+  customers,
+  customersLoading,
+  customersError,
   onClose,
   onSave,
   saving,
@@ -88,8 +91,11 @@ function SiteFormModal({
   const isEdit = mode === "edit";
 
   const [form, setForm] = useState(() => ({
+    customerId:
+      site?.customerId != null
+        ? String(site.customerId)
+        : "",
     name: site?.name ?? "",
-    customerName: site?.customerName ?? "",
     location: site?.location ?? "",
     serviceType: site?.serviceType ?? "Steam",
     status: site?.status ?? "Active",
@@ -153,8 +159,47 @@ function SiteFormModal({
         </div>
 
         <div className="form-grid">
+          <label className="form-field form-field--full">
+            Customer
+
+            <select
+              name="customerId"
+              value={form.customerId}
+              onChange={handleChange}
+              required
+              disabled={
+                customersLoading ||
+                customers.length === 0
+              }
+            >
+              <option value="" disabled>
+                {customersLoading
+                  ? "Loading customers..."
+                  : customers.length === 0
+                    ? "No active customers available"
+                    : "Select a customer"}
+              </option>
+
+              {customers.map((customer) => (
+                <option
+                  key={customer.id}
+                  value={String(customer.id)}
+                >
+                  {customer.companyName}
+                </option>
+              ))}
+            </select>
+
+            {customersError && (
+              <span className="field-error" role="alert">
+                {customersError}
+              </span>
+            )}
+          </label>
+
           <label className="form-field">
             Site name
+
             <input
               name="name"
               value={form.name}
@@ -166,19 +211,8 @@ function SiteFormModal({
           </label>
 
           <label className="form-field">
-            Customer name
-            <input
-              name="customerName"
-              value={form.customerName}
-              onChange={handleChange}
-              placeholder="e.g. Northstar Foods"
-              required
-              maxLength={120}
-            />
-          </label>
-
-          <label className="form-field form-field--full">
             Location
+
             <input
               name="location"
               value={form.location}
@@ -191,6 +225,7 @@ function SiteFormModal({
 
           <label className="form-field">
             Service type
+
             <select
               name="serviceType"
               value={form.serviceType}
@@ -207,6 +242,7 @@ function SiteFormModal({
 
           <label className="form-field">
             Site status
+
             <select
               name="status"
               value={form.status}
@@ -241,7 +277,7 @@ function SiteFormModal({
           <button
             type="submit"
             className="button button--primary"
-            disabled={saving}
+            disabled={saving || customersLoading}
           >
             <Save size={16} />
 
@@ -291,8 +327,7 @@ function DeleteSiteModal({
         <p className="modal-description">
           You're about to delete{" "}
           <strong>{site.name}</strong>.
-          This operation removes the site from the
-          current data store.
+          This operation removes the site from the current data store.
         </p>
 
         {error && (
@@ -318,6 +353,7 @@ function DeleteSiteModal({
             disabled={deleting}
           >
             <Trash2 size={16} />
+
             {deleting ? "Deleting..." : "Delete site"}
           </button>
         </div>
@@ -330,6 +366,10 @@ function App() {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [customers, setCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+  const [customersError, setCustomersError] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
@@ -347,11 +387,9 @@ function App() {
 
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
-  // Load site records from our Express backend.
   const loadSites = useCallback(async () => {
     setLoading(true);
     setError("");
-    setNotice("");
 
     try {
       const data = await getSites();
@@ -367,23 +405,51 @@ function App() {
     }
   }, []);
 
+  const loadCustomers = useCallback(async () => {
+    setCustomersLoading(true);
+    setCustomersError("");
+
+    try {
+      const data = await getCustomers();
+      setCustomers(data);
+    } catch (err) {
+      setCustomersError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load customers."
+      );
+    } finally {
+      setCustomersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadSites();
   }, [loadSites]);
 
-  // Search and filter the data currently displayed.
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
+
+  const activeCustomers = useMemo(
+    () => customers.filter(
+      (customer) => customer.status === "Active"
+    ),
+    [customers]
+  );
+
   const filteredSites = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return sites.filter((site) => {
-      const searchableValues = [
+      const values = [
         site.name,
         site.customerName,
         site.location,
         site.serviceType,
       ];
 
-      const matchesSearch = searchableValues.some(
+      const matchesSearch = values.some(
         (value) =>
           String(value ?? "").toLowerCase().includes(query)
       );
@@ -436,15 +502,15 @@ function App() {
   function openCreateSite() {
     setEditingSite(null);
     setFormError("");
-    setSiteModalMode("create");
     setNotice("");
+    setSiteModalMode("create");
   }
 
   function openEditSite(site) {
     setEditingSite(site);
     setFormError("");
-    setSiteModalMode("edit");
     setNotice("");
+    setSiteModalMode("edit");
   }
 
   function closeSiteModal() {
@@ -455,14 +521,23 @@ function App() {
     setFormError("");
   }
 
-  // POST creates a site; PUT replaces its editable details.
   async function handleSaveSite(formData) {
     setSavingSite(true);
     setFormError("");
 
     try {
+      if (!formData.customerId) {
+        throw new Error("Please select a customer.");
+      }
+
+      // Send the customer's numeric ID, not the company name.
+      const payload = {
+        ...formData,
+        customerId: Number(formData.customerId),
+      };
+
       if (siteModalMode === "create") {
-        const created = await createSite(formData);
+        const created = await createSite(payload);
 
         setSites((current) => [...current, created]);
         setNotice("Site created successfully.");
@@ -472,7 +547,7 @@ function App() {
       ) {
         const updated = await replaceSite(
           editingSite.id,
-          formData
+          payload
         );
 
         setSites((current) =>
@@ -498,7 +573,6 @@ function App() {
     }
   }
 
-  // PATCH changes only the selected status field.
   async function handleStatusChange(site, newStatus) {
     if (!newStatus || site.status === newStatus) {
       return;
@@ -531,7 +605,6 @@ function App() {
     }
   }
 
-  // DELETE removes the selected site after confirmation.
   async function handleDeleteSite() {
     if (!deleteCandidate) return;
 
@@ -661,6 +734,7 @@ function App() {
             </button>
 
             <div className="topbar-avatar">OT</div>
+
             <ChevronDown
               size={16}
               className="topbar-chevron"
@@ -688,6 +762,15 @@ function App() {
                 type="button"
                 className="button button--primary"
                 onClick={openCreateSite}
+                disabled={
+                  customersLoading ||
+                  activeCustomers.length === 0
+                }
+                title={
+                  activeCustomers.length === 0
+                    ? "An active customer is required to create a site"
+                    : "Create a site"
+                }
               >
                 <Plus size={17} />
                 Add site
@@ -703,6 +786,7 @@ function App() {
                   size={17}
                   className={loading ? "spin" : ""}
                 />
+
                 {loading ? "Refreshing..." : "Refresh data"}
               </button>
             </div>
@@ -744,7 +828,10 @@ function App() {
                 icon: Icon,
                 color,
               }) => (
-                <article className="metric-card" key={label}>
+                <article
+                  className="metric-card"
+                  key={label}
+                >
                   <div className="metric-top">
                     <span className="metric-label">
                       {label}
@@ -821,6 +908,7 @@ function App() {
                   aria-label="Filter by status"
                 >
                   <option>All statuses</option>
+
                   {SITE_STATUSES.map((status) => (
                     <option key={status} value={status}>
                       {status}
@@ -873,8 +961,7 @@ function App() {
                         colSpan={6}
                         className="table-message"
                       >
-                        No sites match your search or
-                        selected status.
+                        No sites match your search or status.
                       </td>
                     </tr>
                   ) : (
@@ -1009,6 +1096,9 @@ function App() {
           key={`${siteModalMode}-${editingSite?.id ?? "new"}`}
           mode={siteModalMode}
           site={editingSite}
+          customers={activeCustomers}
+          customersLoading={customersLoading}
+          customersError={customersError}
           onClose={closeSiteModal}
           onSave={handleSaveSite}
           saving={savingSite}

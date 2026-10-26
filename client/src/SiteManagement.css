@@ -1,4 +1,3 @@
-
 .page-actions {
   display: flex;
   align-items: center;
@@ -203,6 +202,14 @@
 .form-field select:focus {
   border-color: #82b292;
   box-shadow: 0 0 0 3px #e7f3e9;
+}
+
+.field-error {
+  display: block;
+  color: #923f39;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 .modal-actions {
